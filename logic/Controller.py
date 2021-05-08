@@ -30,6 +30,7 @@ class Controller:
         
 
     def run_prediction(self, index, threshold=STATIC_THRESHOLD):
+        print('Start prediction')
         predictions = {}
         methods = list(prediction_link_dictionary.values())
         methods_name = list(prediction_link_dictionary.keys())
@@ -41,6 +42,7 @@ class Controller:
         prediction_results[1].threshold = threshold
 
         predictions[method_name] = prediction_results
+        print('End prediction')
         return predictions
 
 
@@ -57,7 +59,23 @@ class Controller:
         perf.time = end - start
         return calculated_tuple, perf
 
+    def make_step_analysis(self, f, to, step, method_index):
+        predictions = {}
 
+        methods = list(prediction_link_dictionary.values())
+        methods_name = list(prediction_link_dictionary.keys())
+
+        method_name = methods_name[method_index].value
+        selected_method = methods[method_index]
+
+        i = f
+        while i < to:
+            prediction_results = self.make_calculation(self.adj_A, selected_method, i, method_name)
+            prediction_results[1].threshold = i
+            predictions[i] = prediction_results
+            i+=step
+            
+        return predictions
 
     def make_graph_analysis(self):
         g = GraphAnalysis()

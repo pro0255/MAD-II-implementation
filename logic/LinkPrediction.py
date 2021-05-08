@@ -90,7 +90,7 @@ def resource_allocation_index_calc(y, x, matrix):
     return suma
 
 
-def cosine_similarity_calc(y, x):
+def cosine_similarity_calc(y, x, matrix):
     edges_y = np.where(y > 0)
     edges_x = np.where(x > 0)
     set_y = set(np.array(edges_y).flatten()) 
@@ -105,7 +105,7 @@ def cosine_similarity_calc(y, x):
     else:
         return nom / den
 
-def sorensen_index_calc(y, x):
+def sorensen_index_calc(y, x, matrix):
     edges_y = np.where(y > 0)
     edges_x = np.where(x > 0)
     set_y = set(np.array(edges_y).flatten()) 

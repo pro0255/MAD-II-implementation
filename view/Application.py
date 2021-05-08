@@ -7,6 +7,7 @@ import pandas as pd
 import networkx as nx
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import os
 
 
 
@@ -15,6 +16,8 @@ METHODS = [k.value for k in prediction_link_dictionary.keys()]
 
 class Application:
     def __init__(self, controller):
+        self.is_prediction = False
+        self.is_step_prediction = False
         self.c = controller
         self.window = Tk(className=f'{WINDOW_NAME}')
         self.window.attributes("-fullscreen", True)
@@ -62,7 +65,7 @@ class Application:
     def mount_save_gui(self):
 
         self.title3 = Label(self.window, text="Výběr složky pro výstup", fg="red",  font=("Helvetica", 25))
-        self.title3.grid(row=10, column=1, columnspan=2)
+        self.title3.grid(row=11, column=1, columnspan=2)
 
         self.folder_entry_value_save = StringVar()
         self.folder_entry_save = Entry(self.window,
@@ -72,14 +75,14 @@ class Application:
                                 )
 
     
-        self.folder_entry_save.grid(row=11, column=1, sticky='nsew')
+        self.folder_entry_save.grid(row=12, column=1, sticky='nsew')
 
         self.button_browse_save = Button(
                         self.window,
                         text = "Select output folder",
                         command = self.select_output_folder,
         )
-        self.button_browse_save.grid(row=11, column=2, sticky='nsew')
+        self.button_browse_save.grid(row=12, column=2, sticky='nsew')
 
         self.save_filename = StringVar()
         self.save_filename_entry = Entry(self.window,
@@ -88,7 +91,7 @@ class Application:
                                 state='disabled'   
         )
 
-        self.save_filename_entry.grid(row=12, column=1, columnspan=2, sticky='nsew')
+        self.save_filename_entry.grid(row=13, column=1, columnspan=2, sticky='nsew')
 
 
 
@@ -98,13 +101,64 @@ class Application:
                         state=DISABLED,
                         command = self.save_prediction_action,
         )
-        self.button_save.grid(row=13, column=1, columnspan=2, sticky='nsew')
+        self.button_save.grid(row=14, column=1, columnspan=1, sticky='nsew')
+
+
+        self.button_save_step = Button(
+                        self.window,
+                        text = "Save step prediction",
+                        state=DISABLED,
+                        command = self.save_step_prediction_action,
+        )
+        self.button_save_step.grid(row=14, column=2, columnspan=1, sticky='nsew')
+
+
+    def save_step_prediction_action(self):
+        directory = f'{self.folder_entry_value_save.get()}/stepanalysis_{self.save_filename.get()}_t{self.threshold_value.get()}'
+        path = f'{directory}/{self.save_filename.get()}_t{self.threshold_value.get()}.xlsx'
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        self.save_prediction(self.step_predictions, path)
+
+
+        #save graphs
+        ys = {}
+
+        x = self.step_predictions.keys() #thresholds
+        performances = self.step_predictions.values()
+        titles = None
+
+        for performance in performances:
+            for k,v in performance[1].get_dictionary().items():
+                if k in ys:
+                    ys[k].append(v)
+                else:
+                    ys[k] = [v]
+
+
+        #save graphs
+        for k, v in ys.items():
+            print('saving graph', k)
+            fig, ax = plt.subplots()
+            ax.set_title(k)
+            ax.set_xlabel('threshold')
+            ax.set_ylabel('%')
+            ax.grid()
+            ax.plot(x, v, color='red', marker='o')
+            fig.savefig(f'{directory}/{k}.jpg')
+
+
+
+
+
+
+
+
 
 
     def save_prediction_action(self):
         path = f'{self.folder_entry_value_save.get()}/{self.save_filename.get()}_t{self.threshold_value.get()}.xlsx'
         self.save_prediction(self.predictions, path)
-        print('saving')
 
 
     def unmount_save_gui(self):
@@ -121,12 +175,15 @@ class Application:
         print()
         f_i = self.filename.rindex('/')
         name_of_input_file = self.filename[f_i+1:].replace('.', '')
-        method = list(self.predictions.keys())[0]
+        method = self.method_name
         value = f'{name_of_input_file}_{method}'
         self.save_filename.set(value)
         self.save_filename_entry['state'] = NORMAL
-        self.button_save['state'] = NORMAL
 
+        if self.is_prediction:
+            self.button_save['state'] = NORMAL
+        if self.is_step_prediction:
+            self.button_save_step['state'] = NORMAL
 
     def unmount_selection_gui(self):
         self.checkbar.grid_remove()
@@ -135,10 +192,16 @@ class Application:
     def disable_start_button(self, selected):
         if selected:
             self.button_start['state'] = NORMAL
+            self.button_start_step_analysis['state'] = NORMAL
             self.threshold_entry['state'] = NORMAL
+            self.threshold_entry_step['state'] = NORMAL
+            self.threshold_entry_stop['state'] = NORMAL
         else:
             self.button_start['state'] = DISABLED
+            self.button_start_step_analysis['state'] = DISABLED
             self.threshold_entry['state'] = DISABLED
+            self.threshold_entry_step['state'] = DISABLED
+            self.threshold_entry_stop['state'] = DISABLED
              
 
     def mount_properties_gui(self):
@@ -177,16 +240,54 @@ class Application:
             state='disabled',
             command=self.start_prediction
         )
-        self.button_start.grid(row=9, column=1, columnspan=2, sticky='nsew')
+        self.button_start.grid(row=10, column=1, columnspan=1, sticky='nsew')
+
+
+        ##step analysis
+        self.button_start_step_analysis = Button(
+            self.window,
+            text = "Start step analysis",
+            state='disabled',
+            command=self.start_step_analysis
+        )
+
+        self.button_start_step_analysis.grid(row=10, column=2, columnspan=1, sticky='nsew')
+
+
+        self.threshold_value_stop = StringVar()
+        self.threshold_entry_stop = Entry(self.window,
+                                text = self.threshold_value_stop,
+                                fg = "red",
+                                state='disabled'
+                                )
+        self.threshold_entry_stop.grid(row=8, column=2,columnspan=1, sticky='nsew')
+
+
+        self.threshold_value_step = StringVar()
+        self.threshold_entry_step = Entry(self.window,
+                                text = self.threshold_value_step,
+                                fg = "red",
+                                state='disabled'
+                                )
+        self.threshold_entry_step.grid(row=9, column=1,columnspan=2, sticky='nsew')
+
 
         self.threshold_value = StringVar()
         self.threshold_entry = Entry(self.window,
                                 text = self.threshold_value,
                                 fg = "red",
                                 state='disabled'
-                                )
-        self.threshold_entry.grid(row=8, column=1,columnspan=2, sticky='nsew')
+        )
+        self.threshold_entry.grid(row=8, column=1,columnspan=1, sticky='nsew')
 
+    def start_step_analysis(self):
+        method_index = list(self.checkbar.state()).index(1)
+        self.method_name = list(prediction_link_dictionary.keys())[method_index].value
+        self.step_predictions = self.c.make_step_analysis(float(self.threshold_value.get()), float(self.threshold_value_stop.get()), float(self.threshold_value_step.get()), method_index)
+        self.is_step_prediction = True
+
+        if self.step_predictions is not None:
+            self.mount_save_gui()
 
 
     def start_prediction(self):
@@ -223,14 +324,15 @@ class Application:
             props_df.to_excel(writer, sheet_name='GraphProperties')
             for index, df in enumerate(dfs):
                 sheet_name = predictions_keys[index]
-                df.to_excel(writer, sheet_name=sheet_name)
+                df.to_excel(writer, sheet_name=f'{sheet_name}')
                 writer.save()
 
 
     def run_prediction(self, index):
-        threshold = int(self.threshold_value.get())
-        print(threshold)
-        self.predictions = self.c.run_prediction(index)
+        self.method_name = list(prediction_link_dictionary.keys())[index].value
+        self.is_prediction = True
+        threshold = float(self.threshold_value.get())
+        self.predictions = self.c.run_prediction(index, threshold)
         if self.predictions is not None:
             self.mount_save_gui()
             #Show save button and browse
