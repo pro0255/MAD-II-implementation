@@ -47,10 +47,15 @@ class Application:
         self.button_submit = Button(
                 self.window,
                 text = "Load",
-                state='disabled',
+                state=DISABLED,
                 command=self.load_ds
         )
-        self.button_submit.grid(row=3, column=1, columnspan=2, sticky='nsew')
+        self.button_submit.grid(row=3, column=2, columnspan=1, sticky='nsew')
+
+
+        self.checkbox_value = IntVar()
+        self.checkbox = Checkbutton(self.window, text='Visualization',variable=self.checkbox_value, onvalue=1, offvalue=0, state=DISABLED)
+        self.checkbox.grid(row=3, column=1, columnspan=1, sticky='nsew')
 
 
 
@@ -150,11 +155,11 @@ class Application:
         self.properties_text.insert(END, text_widget_input) 
         self.properties_text.config(state=DISABLED)
 
-
-        fig, ax = plt.subplots()
-        nx.draw_spring(self.c.G, cmap=plt.get_cmap('jet'), with_labels = True, ax=ax)
-        self.canvas = FigureCanvasTkAgg(fig, self.window) 
-        self.canvas.get_tk_widget().grid(row=4, column=2, columnspan=1, sticky='nsew')
+        if self.checkbox_value.get():
+            fig, ax = plt.subplots()
+            nx.draw_spring(self.c.G, cmap=plt.get_cmap('jet'), with_labels = True, ax=ax)
+            self.canvas = FigureCanvasTkAgg(fig, self.window) 
+            self.canvas.get_tk_widget().grid(row=4, column=2, columnspan=1, sticky='nsew')
 
 
     def mount_selection_gui(self):
@@ -234,7 +239,7 @@ class Application:
     def load_ds(self):
         if self.c.load_ds(self.filename_entry_value.get()):
             self.c.create_G()
-
+            
             self.graph_analysis = self.c.make_graph_analysis()
             self.mount_properties_gui()
             self.mount_selection_gui()
@@ -259,6 +264,7 @@ class Application:
                                                         ))       
         self.filename_entry_value.set(self.filename)
         self.button_submit['state'] = NORMAL
+        self.checkbox['state'] = NORMAL
 
 
 
