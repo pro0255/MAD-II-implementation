@@ -1,0 +1,7 @@
+
+
+IGNORE_ZERO = False
+VERBOSE = True
+
+
+STATIC_THRESHOLD = 0.2

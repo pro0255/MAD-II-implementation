@@ -1,0 +1,7 @@
+
+
+
+WIDTH = 500
+HEIGHT = 500
+
+WINDOW_NAME = 'mad II'
